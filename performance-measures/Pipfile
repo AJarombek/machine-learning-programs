@@ -1,0 +1,17 @@
+# Dependencies and environment for the performance-measures directory in the machine-learning-programs repository.
+# Author: Andrew Jarombek
+# Date: 10/4/2020
+
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+
+[packages]
+pandas = ">=1.1.2"
+numpy = ">=1.19.2"
+
+[requires]
+python_version = "3.8"

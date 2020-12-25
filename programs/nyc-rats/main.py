@@ -65,7 +65,34 @@ def load_population_data() -> pd.DataFrame:
 
 
 def combine_datasets(rat_sighting_data: pd.DataFrame, population_data: pd.DataFrame) -> pd.DataFrame:
-    pass
+    pop_data = population_data.rename(columns={
+        'zip': 'Zip',
+        'borough': 'Borough',
+        'post_office': 'Post Office',
+        'neighborhood': 'Neighborhood',
+        'population': 'Population',
+        'density': 'Density'
+    })
+    pop_data = pop_data.drop(columns=['Borough'])
+    full_data_set = rat_sighting_data.join(pop_data.set_index('Zip'), on='Incident Zip')
+
+    full_data_set = full_data_set.loc[:, [
+        'Incident Zip',
+        'Location Type',
+        'Incident Address',
+        'Status',
+        'Borough',
+        'Latitude',
+        'Longitude',
+        'Post Office',
+        'Neighborhood',
+        'Population',
+        'Density'
+    ]]
+
+    full_data_set = full_data_set.dropna(subset=['Incident Zip'])
+    full_data_set['Incident Zip'] = full_data_set['Incident Zip'].apply(lambda x: str(int(x)))
+    return full_data_set
 
 
 def split_train_test_sample(all_data: pd.DataFrame, test_ratio: float) -> Tuple[pd.DataFrame, pd.DataFrame]:
@@ -85,20 +112,14 @@ def split_train_test_sample(all_data: pd.DataFrame, test_ratio: float) -> Tuple[
 
 
 def train_test_split_random_sampling(all_data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    cleaned_data = all_data.dropna(subset=['Incident Zip'])
-    cleaned_data['Incident Zip'] = cleaned_data['Incident Zip'].apply(lambda x: str(int(x)))
-
     return train_test_split(all_data, test_size=0.2, random_state=42)
 
 
 def train_test_split_stratified_sampling(all_data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    cleaned_data = all_data.dropna(subset=['Incident Zip'])
-    cleaned_data['Incident Zip'] = cleaned_data['Incident Zip'].apply(lambda x: str(int(x)))
-
-    zip_code_counts = cleaned_data['Incident Zip'].astype('category').value_counts()
+    zip_code_counts = all_data['Incident Zip'].astype('category').value_counts()
     zip_codes_with_one_row = zip_code_counts[zip_code_counts == 1].index
 
-    cleaned_data = cleaned_data[~cleaned_data['Incident Zip'].isin(zip_codes_with_one_row)]
+    cleaned_data = all_data[~all_data['Incident Zip'].isin(zip_codes_with_one_row)]
 
     split = StratifiedShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
     strat_train_set = None

@@ -16,28 +16,59 @@ import numpy as np
 from sklearn.model_selection import train_test_split, StratifiedShuffleSplit
 
 # https://www.kaggle.com/new-york-city/nyc-rat-sightings/download
-DATASET_URL = "https://bit.ly/2GAhRwT"
+RAT_DATASET_URL = "https://bit.ly/2GAhRwT"
+
+# https://data.beta.nyc/dataset/0ff93d2d-90ba-457c-9f7e-39e47bf2ac5f/resource/7caac650-d082-4aea-9f9b-3681d568e8a5/download/nyc_zip_borough_neighborhoods_pop.csv
+NYC_POPULATION_DATASET_URL = "https://bit.ly/38ysHxo"
 
 
-def fetch_data() -> None:
+def fetch_rat_sighting_data() -> None:
+    """
+    Fetch the dataset containing the NYC rat sighting data.
+    """
     try:
         os.mkdir('data')
     except FileExistsError:
         print('data directory already exists')
 
-    with urllib.request.urlopen(DATASET_URL) as file:
-        with open('data/source.zip', 'wb') as saved_file:
-            saved_file.write(file.read())
+    if not os.path.exists('data/Rat_Sightings.csv'):
+        with urllib.request.urlopen(RAT_DATASET_URL) as file:
+            with open('data/source.zip', 'wb') as saved_file:
+                saved_file.write(file.read())
 
-    with zipfile.ZipFile('data/source.zip', 'r') as zip_ref:
-        zip_ref.extractall('data')
+        with zipfile.ZipFile('data/source.zip', 'r') as zip_ref:
+            zip_ref.extractall('data')
 
 
-def load_data() -> pd.DataFrame:
+def fetch_nyc_population_data() -> None:
+    """
+    Fetch the dataset containing NYC population data (bucketed by zip code).
+    """
+    if not os.path.exists('data/NYC_Population.csv'):
+        with urllib.request.urlopen(NYC_POPULATION_DATASET_URL) as file:
+            with open('data/NYC_Population.csv', 'wb') as saved_file:
+                saved_file.write(file.read())
+
+
+def load_rat_sighting_data() -> pd.DataFrame:
+    """
+    Load the CSV file containing rat sighting data into a pandas DataFrame object.
+    """
     return pd.read_csv('data/Rat_Sightings.csv')
 
 
-def split_train_test(all_data: pd.DataFrame, test_ratio: float) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def load_population_data() -> pd.DataFrame:
+    """
+    Load the CSV file containing nyc population data into a pandas DataFrame object.
+    """
+    return pd.read_csv('data/NYC_Population.csv')
+
+
+def combine_datasets(rat_sighting_data: pd.DataFrame, population_data: pd.DataFrame) -> pd.DataFrame:
+    pass
+
+
+def split_train_test_sample(all_data: pd.DataFrame, test_ratio: float) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Split the full data set into two sets - one for training the machine learning algorithm (training set) and one for
     testing the performance of the machine learning algorithm (test set).  scikit-learn has a built-in utility function
@@ -46,16 +77,49 @@ def split_train_test(all_data: pd.DataFrame, test_ratio: float) -> Tuple[pd.Data
     :param test_ratio: The ratio of data that is placed in the training set.
     :return: A tuple containing the training set and test set.
     """
-    shuffled_indices = np.random.permutation(len(data))
+    shuffled_indices = np.random.permutation(len(all_data))
     test_set_size = int(len(all_data) * test_ratio)
     train_indices = shuffled_indices[test_set_size:]
     test_indices = shuffled_indices[:test_set_size]
     return all_data.iloc[train_indices], all_data.iloc[test_indices]
 
 
+def train_test_split_random_sampling(all_data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    cleaned_data = all_data.dropna(subset=['Incident Zip'])
+    cleaned_data['Incident Zip'] = cleaned_data['Incident Zip'].apply(lambda x: str(int(x)))
+
+    return train_test_split(all_data, test_size=0.2, random_state=42)
+
+
+def train_test_split_stratified_sampling(all_data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    cleaned_data = all_data.dropna(subset=['Incident Zip'])
+    cleaned_data['Incident Zip'] = cleaned_data['Incident Zip'].apply(lambda x: str(int(x)))
+
+    zip_code_counts = cleaned_data['Incident Zip'].astype('category').value_counts()
+    zip_codes_with_one_row = zip_code_counts[zip_code_counts == 1].index
+
+    cleaned_data = cleaned_data[~cleaned_data['Incident Zip'].isin(zip_codes_with_one_row)]
+
+    split = StratifiedShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+    strat_train_set = None
+    strat_test_set = None
+
+    for train_index, test_index in split.split(cleaned_data, cleaned_data['Incident Zip']):
+        strat_train_set = cleaned_data.reindex(train_index)
+        strat_test_set = cleaned_data.reindex(test_index)
+
+    return strat_train_set, strat_test_set
+
+
 if __name__ == '__main__':
-    fetch_data()
-    data = load_data()
+    fetch_rat_sighting_data()
+    fetch_nyc_population_data()
+
+    rat_sighting_data = load_rat_sighting_data()
+    population_data = load_population_data()
+
+    data = combine_datasets(rat_sighting_data, population_data)
+
     train_set, test_set = train_test_split(data, test_size=0.2, random_state=42)
 
     StratifiedShuffleSplit(n_splits=1, test_size=0.2, random_state=42)

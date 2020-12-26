@@ -65,6 +65,12 @@ def load_population_data() -> pd.DataFrame:
 
 
 def combine_datasets(rat_sighting_data: pd.DataFrame, population_data: pd.DataFrame) -> pd.DataFrame:
+    """
+    Combine the rat sighting and population by zip code data sets.
+    :param rat_sighting_data: The rat sighting data.
+    :param population_data: The population by zip code data.
+    :return: The merged data set as a pandas data frame.
+    """
     pop_data = population_data.rename(columns={
         'zip': 'Zip',
         'borough': 'Borough',
@@ -112,10 +118,22 @@ def split_train_test_sample(all_data: pd.DataFrame, test_ratio: float) -> Tuple[
 
 
 def train_test_split_random_sampling(all_data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Split the data into a training set and a test set.  This is done with random sampling (picking data for the
+    two sets randomly).
+    :param all_data: The data before its split into separate sets.
+    :return: A tuple containing the training set and test set.
+    """
     return train_test_split(all_data, test_size=0.2, random_state=42)
 
 
 def train_test_split_stratified_sampling(all_data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Split the data into a training set and a test set.  This is done with stratified sampling (picking a specific number
+    of data rows from subgroups [strata] so that the data accurately reflects the overall population).
+    :param all_data: The data before its split into separate sets.
+    :return: A tuple containing the training set and test set.
+    """
     zip_code_counts = all_data['Incident Zip'].astype('category').value_counts()
     zip_codes_with_one_row = zip_code_counts[zip_code_counts == 1].index
 
@@ -141,6 +159,5 @@ if __name__ == '__main__':
 
     data = combine_datasets(rat_sighting_data, population_data)
 
-    train_set, test_set = train_test_split(data, test_size=0.2, random_state=42)
-
-    StratifiedShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+    train_set, test_set = train_test_split_random_sampling(data)
+    train_test_split_stratified_sampling(data)

@@ -1,6 +1,6 @@
-# Dependencies and environment for the NYC rats machine learning problem.
+# Dependencies and environment for the CT housing prices machine learning problem.
 # Author: Andrew Jarombek
-# Date: 10/4/2020
+# Date: 12/25/2020
 
 [[source]]
 name = "pypi"
@@ -10,8 +10,6 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-folium = ">=0.11.0"
-matplotlib = ">=3.3.3"
 numpy = ">=1.19.2"
 pandas = ">=1.1.2"
 scikit-learn = ">=0.23.2"

@@ -1,6 +1,6 @@
 ### ML Steps
 
 - [ ] Data Cleaned
-- [ ] Data Analyzed 
+- [x] Data Analyzed 
 - [ ] ML Program Created
 - [ ] ML Program Tested

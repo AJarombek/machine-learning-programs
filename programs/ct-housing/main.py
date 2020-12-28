@@ -107,6 +107,10 @@ def train_ct_housing_model(prepared_data: scipy.sparse, labels: pd.Series) -> Li
 
 
 if __name__ == '__main__':
+    ''' 
+    As I'm sure you know, you are always welcome to interrupt my day or have someone else interrupt my day 
+    if you think I can help you :) 
+    '''
     fetch_ct_housing_data()
     initial_housing_data = load_ct_housing_data()
     train_set, test_set = train_test_split(initial_housing_data, test_size=0.2, random_state=42)

@@ -18,6 +18,8 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
 
 # https://data.ct.gov/Housing-and-Development/Real-Estate-Sales-2001-2018/5mzw-sjtu
 HOUSING_DATASET_URL = "https://data.ct.gov/api/views/5mzw-sjtu/rows.csv?accessType=DOWNLOAD"
@@ -100,10 +102,42 @@ def transform_and_encode_ct_housing_data(data: pd.DataFrame) -> scipy.sparse:
     return full_pipeline.fit_transform(data)
 
 
-def train_ct_housing_model(prepared_data: scipy.sparse, labels: pd.Series) -> LinearRegression:
+def train_ct_housing_linear_regression_model(prepared_data: scipy.sparse, labels: pd.Series) -> LinearRegression:
+    """
+    Train the data using a linear regression model.
+    :param prepared_data: Data that is prepared to be used by the model.
+    :param labels: Labels (the answer to the ML problem) for the data.
+    :return: The linear regression model object.
+    """
     lin_reg = LinearRegression()
     lin_reg.fit(prepared_data, labels)
     return lin_reg
+
+
+def train_ct_housing_decision_tree_regressor_model(prepared_data: scipy.sparse, labels: pd.Series) \
+        -> DecisionTreeRegressor:
+    """
+    Train the data using a decision tree regressor model.
+    :param prepared_data: Data that is prepared to be used by the model.
+    :param labels: Labels (the answer to the ML problem) for the data.
+    :return: The decision tree regressor model object.
+    """
+    decision_tree_reg = DecisionTreeRegressor()
+    decision_tree_reg.fit(prepared_data, labels)
+    return decision_tree_reg
+
+
+def train_ct_housing_random_forst_regressor_model(prepared_data: scipy.sparse, labels: pd.Series) \
+        -> RandomForestRegressor:
+    """
+    Train the data using a random forest regressor model.
+    :param prepared_data: Data that is prepared to be used by the model.
+    :param labels: Labels (the answer to the ML problem) for the data.
+    :return: The random forest regressor model object.
+    """
+    random_forest_reg = RandomForestRegressor()
+    random_forest_reg.fit(prepared_data, labels)
+    return random_forest_reg
 
 
 if __name__ == '__main__':

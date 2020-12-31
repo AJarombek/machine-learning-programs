@@ -1,6 +1,5 @@
 .idea
 **/.ipynb_checkpoints
-programs/nyc-rats/data
-programs/ct-housing/data
+programs/**/data
 **/.DS_Store
 **/venv

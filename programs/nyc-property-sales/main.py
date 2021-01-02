@@ -11,15 +11,39 @@ from datetime import datetime
 
 import pandas as pd
 import numpy as np
+import statsmodels.api as sm
 import scipy.sparse
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import OneHotEncoder, StandardScaler, PowerTransformer
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
+
+num_attributes = [
+    'BLOCK',
+    'LOT',
+    'ZIP CODE',
+    'RESIDENTIAL UNITS',
+    'COMMERCIAL UNITS',
+    'TOTAL UNITS',
+    'LAND SQUARE FEET',
+    'GROSS SQUARE FEET',
+    'YEAR BUILT',
+    'TAX CLASS AT TIME OF SALE',
+    'SALE DATE'
+]
+
+cat_attributes = [
+    'BOROUGH',
+    'NEIGHBORHOOD',
+    'BUILDING CLASS CATEGORY',
+    'TAX CLASS AT PRESENT',
+    'BUILDING CLASS AT PRESENT',
+    'BUILDING CLASS AT TIME OF SALE'
+]
 
 
 def load_data() -> pd.DataFrame:
@@ -84,7 +108,7 @@ def split_labels_and_data(data: pd.DataFrame) -> Tuple[pd.Series, pd.DataFrame]:
 
 def transform_and_encode_data(data: pd.DataFrame) -> scipy.sparse:
     """
-    Transform the data so that it performs better as a machine learning training model.
+    Transform the data so that it performs better as a machine learning training model (for the scikit-learn library).
     :param data: The property sale data (without the label)
     :return: The data which is passed to the ML algorithm.
     """
@@ -96,29 +120,6 @@ def transform_and_encode_data(data: pd.DataFrame) -> scipy.sparse:
     cat_pipeline = Pipeline([
         ('encoder', OneHotEncoder())
     ])
-
-    num_attributes = [
-        'BLOCK',
-        'LOT',
-        'ZIP CODE',
-        'RESIDENTIAL UNITS',
-        'COMMERCIAL UNITS',
-        'TOTAL UNITS',
-        'LAND SQUARE FEET',
-        'GROSS SQUARE FEET',
-        'YEAR BUILT',
-        'TAX CLASS AT TIME OF SALE',
-        'SALE DATE'
-    ]
-
-    cat_attributes = [
-        'BOROUGH',
-        'NEIGHBORHOOD',
-        'BUILDING CLASS CATEGORY',
-        'TAX CLASS AT PRESENT',
-        'BUILDING CLASS AT PRESENT',
-        'BUILDING CLASS AT TIME OF SALE'
-    ]
 
     full_pipeline = ColumnTransformer([
         ('num', num_pipeline, num_attributes),
@@ -166,12 +167,53 @@ def train_random_forst_regressor_model(prepared_data: scipy.sparse, labels: pd.S
     return random_forest_reg
 
 
+def transform_and_encode_data_statsmodels(data: pd.DataFrame) -> pd.DataFrame:
+    """
+    Transform the data so that it performs better as a machine learning training model (for the statsmodels library).
+    :param data: The property sale data (without the label)
+    :return: The data which is passed to the ML algorithm.
+    """
+    nyc_property_sales_data_no_nulls = data.fillna(0)
+
+    num_columns = nyc_property_sales_data_no_nulls.drop(cat_attributes, axis=1)
+    num_columns_transformed = PowerTransformer().fit_transform(num_columns)
+
+    num_columns_transformed = pd.DataFrame(num_columns_transformed)
+    num_columns_transformed.columns = num_columns.columns
+    num_columns_transformed.index = num_columns.index
+
+    cat_columns = nyc_property_sales_data_no_nulls.drop(num_attributes, axis=1)
+    cat_columns = pd.get_dummies(cat_columns, columns=cat_attributes, drop_first=True)
+
+    return pd.concat([num_columns_transformed, cat_columns], axis=1)
+
+
+def train_ordinary_least_squares_model(prepared_data: pd.DataFrame, labels: pd.Series) \
+        -> sm.regression.linear_model.RegressionResults:
+    """
+    Train the data using an ordinary least squares model.
+    :param prepared_data: Data that is prepared to be used by the model.
+    :param labels: Labels (the answer to the ML problem) for the data.
+    :return: The ordinary least squares model result object.
+    """
+    constant_data = sm.add_constant(prepared_data)
+    ols = sm.OLS(labels, constant_data)
+    ols_model = ols.fit()
+    return ols_model
+
+
 if __name__ == '__main__':
     initial_data = load_data()
     train_set, test_set = train_test_split(initial_data, test_size=0.2, random_state=42)
     cleaned_data = clean_data_set(train_set)
     labels, data_set = split_labels_and_data(cleaned_data)
+
+    # Train models using scikit-learn
     final_data = transform_and_encode_data(data_set)
     linear_regression_model = train_linear_regression_model(final_data, labels)
     decision_tree_regressor_model = train_decision_tree_regressor_model(final_data, labels)
     random_forst_regressor_model = train_random_forst_regressor_model(final_data, labels)
+
+    # Train models using statsmodels
+    final_data_statsmodels = transform_and_encode_data_statsmodels(data_set)
+    ols_model_results = train_ordinary_least_squares_model(final_data_statsmodels, labels)
